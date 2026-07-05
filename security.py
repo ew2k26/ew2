@@ -1,76 +1,18 @@
-#!/usr/bin/env python3
-"""Klatom – Maximum Security Module."""
+﻿#!/usr/bin/env python3
+"""Klatom security module - disabled."""
 
 from __future__ import annotations
 
-import ctypes
 import hashlib
 import hmac
 import json
 import os
 import platform
-import struct
 import subprocess
 import sys
 import time
 import uuid
 from pathlib import Path
-
-
-def _kill():
-    try:
-        os._exit(1)
-    except Exception:
-        try:
-            sys.exit(1)
-        except Exception:
-            pass
-
-
-def anti_debug():
-    if platform.system() != "Windows":
-        return
-    try:
-        kernel32 = ctypes.windll.kernel32
-        if kernel32.IsDebuggerPresent():
-            _kill()
-        try:
-            is_debug = ctypes.c_bool(False)
-            if kernel32.CheckRemoteDebuggerPresent(kernel32.GetCurrentProcess(), ctypes.byref(is_debug)):
-                if is_debug.value:
-                    _kill()
-        except Exception:
-            pass
-        try:
-            ntdll = ctypes.windll.ntdll
-            handle = kernel32.GetCurrentProcess()
-            port = ctypes.c_ulong()
-            if ntdll.NtQueryInformationProcess(handle, 7, ctypes.byref(port), ctypes.sizeof(port), None) == 0:
-                if port.value != 0:
-                    _kill()
-        except Exception:
-            pass
-    except Exception:
-        pass
-
-
-def anti_vm():
-    if platform.system() != "Windows":
-        return
-    try:
-        user = os.environ.get("USERNAME", "").lower()
-        if any(x in user for x in ("sandbox", "malware")):
-            _kill()
-    except Exception:
-        pass
-
-
-def anti_extraction():
-    try:
-        if not getattr(sys, "frozen", False):
-            pass
-    except Exception:
-        pass
 
 
 def get_hwid() -> str:
@@ -99,25 +41,25 @@ def check_hwid():
     pass
 
 
+def anti_debug():
+    pass
+
+
+def anti_vm():
+    pass
+
+
+def anti_extraction():
+    pass
+
+
 _INTEGRITY_SEED = b"klatom-integrity-check-2025"
 
 def compute_integrity() -> str:
-    try:
-        if getattr(sys, "frozen", False):
-            exe_path = Path(sys.executable)
-        else:
-            exe_path = Path(__file__)
-        h = hashlib.sha256(_INTEGRITY_SEED)
-        with open(exe_path, "rb") as f:
-            for chunk in iter(lambda: f.read(16384), b""):
-                h.update(chunk)
-        return h.hexdigest()[:32]
-    except Exception:
-        return "no-integrity"
-
+    return "no-integrity"
 
 def verify_integrity(stored_hash: str) -> bool:
-    return hmac.compare_digest(compute_integrity(), stored_hash)
+    return True
 
 
 _ENC_SALT = b"\xa3\x8f\x1b\xd4\x6e\x2c\x9a\x07\xf5\x12\x8b\x3d\xc6\x4e\x70\xa1"
@@ -149,7 +91,6 @@ def save_encrypted(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data_with_meta = dict(data)
     data_with_meta["_t"] = int(time.time())
-    data_with_meta["_i"] = compute_integrity()
     plaintext = json.dumps(data_with_meta, separators=(",", ":")).encode()
     key = _derive_key(get_hwid())
     salt = os.urandom(16)
@@ -191,7 +132,6 @@ def load_encrypted(path: Path) -> dict | None:
         plaintext = _xor(encrypted, enc_key)
         data = json.loads(plaintext)
         data.pop("_t", None)
-        data.pop("_i", None)
         return data
     except Exception:
         return None
@@ -253,7 +193,4 @@ def ensure_creator(auth_path: Path) -> None:
 
 
 def security_init():
-    anti_debug()
-    anti_vm()
-    anti_extraction()
-    check_hwid()
+    pass

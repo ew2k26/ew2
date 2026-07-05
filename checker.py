@@ -1,39 +1,6 @@
-#!/usr/bin/env python3
-"""Klatom v2.1.1 – Discord username checker. MAXIMUM SECURITY."""
+﻿#!/usr/bin/env python3
+"""Klatom v2.2.0 - Discord username checker."""
 from __future__ import annotations
-
-import os, sys
-
-def _pre_security():
-    """Quick anti-debug + anti-VM BEFORE anything loads."""
-    try:
-        import ctypes, platform
-
-        if platform.system() != "Windows":
-            return
-
-        try:
-            kernel32 = ctypes.windll.kernel32
-            if kernel32.IsDebuggerPresent():
-                os._exit(1)
-            try:
-                is_db = ctypes.c_bool(False)
-                if kernel32.CheckRemoteDebuggerPresent(kernel32.GetCurrentProcess(), ctypes.byref(is_db)):
-                    if is_db.value:
-                        os._exit(1)
-            except Exception:
-                pass
-        except Exception:
-            pass
-
-        user = os.environ.get("USERNAME", "").lower()
-        if any(x in user for x in ("sandbox", "malware")):
-            os._exit(1)
-
-    except Exception:
-        pass
-
-_pre_security()
 
 import asyncio.sslproto as _sslproto
 _orig_eof = _sslproto.SSLProtocol.eof_received
@@ -59,53 +26,8 @@ for _n in ("aiohttp", "aiohttp.client", "aiohttp.access", "aiohttp.internal"):
 warnings.filterwarnings("ignore", message=".*[Uu]nclosed.*")
 warnings.filterwarnings("ignore", message=".*[Cc]onnection.*")
 
-from security import security_init
-security_init()
-
-import atexit, subprocess
+import argparse, asyncio, random, sys, time
 from pathlib import Path
-
-def _get_root():
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parent
-
-def _hide_junk():
-    root = _get_root()
-    for d in ["__pycache__", "build", "dist", "data", "logs", "results"]:
-        p = root / d
-        if p.exists():
-            subprocess.run(["attrib", "+h", str(p)], capture_output=True)
-    for f in root.iterdir():
-        if f.suffix.lower() in (".py", ".pyc", ".spec"):
-            subprocess.run(["attrib", "+h", str(f)], capture_output=True)
-
-def _unhide_data():
-    root = _get_root()
-    for d in ["data", "logs", "results"]:
-        p = root / d
-        if p.exists():
-            subprocess.run(["attrib", "-h", str(p)], capture_output=True)
-            for item in p.rglob("*"):
-                if item.is_file():
-                    subprocess.run(["attrib", "-h", str(item)], capture_output=True)
-
-def _rehide_data():
-    root = _get_root()
-    for d in ["data", "logs", "results"]:
-        p = root / d
-        if p.exists():
-            subprocess.run(["attrib", "+h", str(p)], capture_output=True)
-
-try:
-    _hide_junk()
-    _unhide_data()
-    atexit.register(_rehide_data)
-except Exception:
-    pass
-
-import argparse, asyncio, random, time
-from pathlib import Path as _P
 
 from config import (
     DATA_DIR, LOGS_DIR, MAX_CONCURRENCY, RESULTS_DIR, CHECKED_FILE,
