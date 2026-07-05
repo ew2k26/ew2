@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Klatom – Personal Test Mode (CREATOR ONLY, HWID-locked)."""
+"""Klatom – Test Mode (token management, proxy speed, auth tools)."""
 
 from __future__ import annotations
 
@@ -30,6 +30,8 @@ DATA = ROOT / "data"
 AUTH_FILE = DATA / ".auth"
 SESSION_FILE = DATA / ".session"
 TOKENS_FILE = DATA / ".tokens"
+RESULTS_DIR = ROOT / "results"
+
 
 class C:
     PRIMARY = "#A855F7"
@@ -38,9 +40,8 @@ class C:
     WARNING = "#FF9F0A"
     MUTED = "#98989D"
 
-console = Console()
 
-CREATOR_HWID = "f30ed9a7f098b5ecdcfe8a07"
+console = Console()
 
 
 def _hwid() -> str:
@@ -64,12 +65,6 @@ def _hwid() -> str:
         return "unknown"
 
 
-def _check_creator() -> bool:
-    if not CREATOR_HWID:
-        return True
-    return _hwid() == CREATOR_HWID
-
-
 def _banner():
     from rich.text import Text
     from rich import box
@@ -80,8 +75,8 @@ def _banner():
     inner.append("\n  ██╔═██╗ ██║     ██╔══██║██║╚██╗██║   ██║   ██║   ██║██║╚██╔╝██║", style=f"bold {C.PRIMARY}")
     inner.append("\n  ██║  ██╗███████╗██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║", style=f"bold {C.PRIMARY}")
     inner.append("\n  ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝", style=f"bold {C.PRIMARY}")
-    inner.append(f"\n\n  [bold {C.WARNING}]>>> TEST MODE — CREATOR ONLY <<<[/]", style=f"{C.WARNING}")
-    inner.append(f"\n         v2.0.0-test", style=f"{C.MUTED}")
+    inner.append(f"\n\n  [bold {C.WARNING}]>>> TEST MODE <<<[/]", style=f"{C.WARNING}")
+    inner.append(f"\n         v2.1.1", style=f"{C.MUTED}")
     return Panel(inner, box=box.DOUBLE, border_style=C.WARNING, padding=(0, 1))
 
 
@@ -109,13 +104,16 @@ def _show_session():
         except Exception:
             pass
 
+    hits_count = 0
+    hits_file = RESULTS_DIR / "hits.txt"
+    if hits_file.exists():
+        hits_count = len([l for l in hits_file.read_text(encoding="utf-8").splitlines() if l.strip()])
+
     t = Table(box=None, show_header=False, padding=(0, 2))
     t.add_column(style=C.MUTED, width=16)
     t.add_column(style="white")
     t.add_row("HWID", f"[{C.MUTED}]{hwid}[/]")
     t.add_row("Machine", f"[{C.MUTED}]{platform.node()}[/]")
-    t.add_row("Creator HWID", f"[{C.MUTED}]{CREATOR_HWID}[/]")
-    t.add_row("Is Creator", f"[{C.SUCCESS}]YES[/]" if _check_creator() else f"[{C.DANGER}]NO[/]")
 
     if auth_data:
         token_hashes = auth_data.get("t", [])
@@ -144,6 +142,7 @@ def _show_session():
         t.add_row("Trial Status", f"[{C.DANGER}]No session[/]")
 
     t.add_row("Tokens File", f"[{C.PRIMARY}]{tokens_count}[/] tokens")
+    t.add_row("Hits Found", f"[{C.SUCCESS}]{hits_count}[/]")
 
     console.print()
     console.print(Panel(
@@ -225,6 +224,119 @@ def _reset_trial():
         console.print(f"\n[{C.SUCCESS}]New trial activated — 24h started.[/]\n")
 
 
+def _add_token():
+    token = Prompt.ask("Token to approve").strip()
+    if not token:
+        console.print(f"\n[{C.DANGER}]No token entered.[/]\n")
+        return
+    from auth import add_approved_token
+    add_approved_token(token)
+    console.print(f"\n[{C.SUCCESS}]Token approved: {token}[/]\n")
+
+
+def _view_hits():
+    hits_file = RESULTS_DIR / "hits.txt"
+    if not hits_file.exists():
+        console.print(f"\n[{C.DANGER}]No hits file found.[/]\n")
+        return
+    hits = [l.strip() for l in hits_file.read_text(encoding="utf-8").splitlines() if l.strip()]
+    if not hits:
+        console.print(f"\n[{C.MUTED}]No hits yet.[/]\n")
+        return
+    console.print(f"\n[{C.SUCCESS}]Available usernames ({len(hits)}):[/]")
+    for i, h in enumerate(hits[:50], 1):
+        console.print(f"  [{C.MUTED}]{i}.[/] [{C.SUCCESS}]{h}[/]")
+    if len(hits) > 50:
+        console.print(f"  [{C.MUTED}]...and {len(hits) - 50} more[/]")
+    console.print()
+
+
+def _clear_auth():
+    console.print(f"\n[{C.WARNING}]This will delete ALL auth data.[/]")
+    if not Confirm.ask("Are you sure?", default=False):
+        return
+    for f in [AUTH_FILE, SESSION_FILE]:
+        if f.exists():
+            f.unlink()
+    if TOKENS_FILE.exists():
+        TOKENS_FILE.write_text("[]", encoding="utf-8")
+    console.print(f"\n[{C.SUCCESS}]All auth data cleared.[/]\n")
+
+
+def _check_updates():
+    import asyncio
+    from github_loader import decrypt_url
+
+    url = decrypt_url()
+    if not url:
+        console.print(f"\n[{C.DANGER}]Could not decrypt GitHub URL.[/]\n")
+        return
+
+    console.print(f"\n[{C.MUTED}]Checking GitHub for updates...[/]")
+
+    async def _check():
+        try:
+            async with aiohttp.ClientSession() as sess:
+                async with sess.get(f"{url}/config.json", timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        remote_ver = data.get("version", "unknown")
+                        console.print(f"  [{C.SUCCESS}]Remote version: {remote_ver}[/]")
+                        console.print(f"  [{C.MUTED}]Local version:  2.1.1[/]")
+                    else:
+                        console.print(f"  [{C.DANGER}]Failed to fetch config (HTTP {resp.status})[/]")
+        except Exception as e:
+            console.print(f"  [{C.DANGER}]Error: {e}[/]")
+        console.print()
+
+    asyncio.run(_check())
+
+
+def main():
+    console.clear()
+    console.print(_banner())
+    _show_session()
+
+    while True:
+        console.print(f"\n[{C.PRIMARY}]Test Menu:[/]")
+        console.print(f"  [{C.PRIMARY}]1[/] Show session info")
+        console.print(f"  [{C.PRIMARY}]2[/] Generate tokens")
+        console.print(f"  [{C.PRIMARY}]3[/] List tokens")
+        console.print(f"  [{C.PRIMARY}]4[/] Revoke token")
+        console.print(f"  [{C.PRIMARY}]5[/] Add approved token")
+        console.print(f"  [{C.PRIMARY}]6[/] Reset/start trial")
+        console.print(f"  [{C.PRIMARY}]7[/] Test proxy speed")
+        console.print(f"  [{C.PRIMARY}]8[/] View hits")
+        console.print(f"  [{C.PRIMARY}]9[/] Check updates")
+        console.print(f"  [{C.PRIMARY}]10[/] Clear all auth")
+        console.print(f"  [{C.PRIMARY}]11[/] Exit")
+        choice = Prompt.ask(f"\n[{C.PRIMARY}]Choice[/]", default="1").strip()
+        if choice == "1":
+            _show_session()
+        elif choice == "2":
+            _generate_tokens()
+        elif choice == "3":
+            _list_tokens()
+        elif choice == "4":
+            _revoke_token()
+        elif choice == "5":
+            _add_token()
+        elif choice == "6":
+            _reset_trial()
+        elif choice == "7":
+            asyncio.run(_test_proxy_speed())
+        elif choice == "8":
+            _view_hits()
+        elif choice == "9":
+            _check_updates()
+        elif choice == "10":
+            _clear_auth()
+        elif choice == "11":
+            break
+        else:
+            console.print(f"[{C.DANGER}]Invalid option.[/]")
+
+
 async def _test_proxy_speed():
     from config import ENDPOINT
     proxy_file = DATA / "proxies.txt"
@@ -294,62 +406,6 @@ async def _test_proxy_speed():
     fast_file = DATA / "proxies_fast.txt"
     fast_file.write_text("\n".join(fast), encoding="utf-8")
     console.print(f"\n[{C.SUCCESS}]Saved {len(fast)} working proxies to data/proxies_fast.txt[/]\n")
-
-
-def _clear_auth():
-    console.print(f"\n[{C.WARNING}]This will delete ALL auth data.[/]")
-    if not Confirm.ask("Are you sure?", default=False):
-        return
-    for f in [AUTH_FILE, SESSION_FILE]:
-        if f.exists():
-            f.unlink()
-    if TOKENS_FILE.exists():
-        TOKENS_FILE.write_text("[]", encoding="utf-8")
-    console.print(f"\n[{C.SUCCESS}]All auth data cleared.[/]\n")
-
-
-def main():
-    if not _check_creator():
-        hwid = _hwid()
-        console.print(f"\n[{C.DANGER}]BLOCKED — Not the creator machine.[/]")
-        console.print(f"[{C.MUTED}]Your HWID: {hwid}[/]")
-        console.print(f"[{C.MUTED}]Creator:  {CREATOR_HWID}[/]\n")
-        input("Press Enter to exit...")
-        return
-
-    console.clear()
-    console.print(_banner())
-    _show_session()
-
-    while True:
-        console.print(f"\n[{C.PRIMARY}]Test Menu:[/]")
-        console.print(f"  [{C.PRIMARY}]1[/] Show session info")
-        console.print(f"  [{C.PRIMARY}]2[/] Generate tokens")
-        console.print(f"  [{C.PRIMARY}]3[/] List tokens")
-        console.print(f"  [{C.PRIMARY}]4[/] Revoke token")
-        console.print(f"  [{C.PRIMARY}]5[/] Reset/start trial")
-        console.print(f"  [{C.PRIMARY}]6[/] Test proxy speed")
-        console.print(f"  [{C.PRIMARY}]7[/] Clear all auth")
-        console.print(f"  [{C.PRIMARY}]8[/] Exit")
-        choice = Prompt.ask(f"\n[{C.PRIMARY}]Choice[/]", default="1").strip()
-        if choice == "1":
-            _show_session()
-        elif choice == "2":
-            _generate_tokens()
-        elif choice == "3":
-            _list_tokens()
-        elif choice == "4":
-            _revoke_token()
-        elif choice == "5":
-            _reset_trial()
-        elif choice == "6":
-            asyncio.run(_test_proxy_speed())
-        elif choice == "7":
-            _clear_auth()
-        elif choice == "8":
-            break
-        else:
-            console.print(f"[{C.DANGER}]Invalid option.[/]")
 
 
 if __name__ == "__main__":

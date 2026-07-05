@@ -209,7 +209,7 @@ def _load_saved_config(config: Config) -> RunConfig | None:
         proxies=proxies, remove_bad=True, usernames=names,
         concurrency=concurrency, timeout=timeout,
         webhook_url=config.get("webhook"),
-        webhook_message=config.get("webhook_message"),
+        webhook_msg=config.get("webhook_message"),
     )
 
 
@@ -234,7 +234,7 @@ async def _run_checker(cfg: RunConfig, settings: AppSettings) -> None:
 
     stats = Stats()
     checker = Checker(cfg, stats, cfg.webhook_url or "",
-                      cfg.webhook_message or "**<name>** available | <t:time:R>")
+                      cfg.webhook_msg or "**<name>** available | <t:time:R>")
     await checker.start()
 
     _checked_file = CHECKED_FILE.open("a", encoding="utf-8")

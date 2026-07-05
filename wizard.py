@@ -303,8 +303,6 @@ def _generate_usernames() -> list[str]:
 
     ok(f"Generated {len(usernames)} {length}-char usernames")
 
-    from config import ensure_file
-    from config import safe_write if hasattr(config, 'safe_write') else None
     names_path = DATA_DIR / "names.txt"
     names_path.parent.mkdir(parents=True, exist_ok=True)
     names_path.write_text("\n".join(usernames), encoding="utf-8")

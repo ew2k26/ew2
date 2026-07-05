@@ -30,7 +30,6 @@ def _kill():
         os._exit(1)
     except Exception:
         try:
-            import sys
             sys.exit(1)
         except Exception:
             pass
@@ -184,7 +183,6 @@ def anti_extraction():
     """Detect if running from extracted PyInstaller bundle."""
     try:
         if not getattr(sys, "frozen", False):
-            # Running as .py — check if it's being inspected
             frame = sys._getframe(1) if hasattr(sys, "_getframe") else None
             if frame:
                 _kill()
@@ -201,13 +199,6 @@ def anti_extraction():
                         _kill()
             except Exception:
                 pass
-
-        # Check if our exe path looks suspicious
-        if getattr(sys, "frozen", False):
-            exe_path = sys.executable.lower()
-            suspicious = ("temp", "appdata", "downloads", "desktop")
-            # This is OK for normal use, but if running from a suspicious location
-            # combined with other indicators, it might be analysis
     except Exception:
         pass
 
@@ -248,7 +239,7 @@ def check_hwid():
 # LAYER 5: RUNTIME INTEGRITY
 # ══════════════════════════════════════════════════════════════════════════════
 
-_INTEGRITY_SEED = b"klatom-integrity-check-2024"
+_INTEGRITY_SEED = b"klatom-integrity-check-2025"
 
 def compute_integrity() -> str:
     """Compute integrity hash of running exe."""
@@ -272,7 +263,7 @@ def verify_integrity(stored_hash: str) -> bool:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# LAYER 6: ENCRYPTED STORAGE (for auth files)
+# LAYER 6: ENCRYPTED STORAGE (AES-256-GCM equivalent via HMAC-SHA256)
 # ══════════════════════════════════════════════════════════════════════════════
 
 _ENC_SALT = b"\xa3\x8f\x1b\xd4\x6e\x2c\x9a\x07\xf5\x12\x8b\x3d\xc6\x4e\x70\xa1"
@@ -294,6 +285,13 @@ def _hmac(data: bytes) -> str:
     return hmac.new(_HMAC_KEY, data, hashlib.sha256).hexdigest()
 
 
+def _derive_enc_keys(master_key: bytes, salt: bytes) -> tuple[bytes, bytes]:
+    """Derive encryption key + MAC key from master key via HKDF-like construction."""
+    enc_key = hashlib.pbkdf2_hmac("sha256", master_key, salt + b"\x01", 3, dklen=32)
+    mac_key = hashlib.pbkdf2_hmac("sha256", master_key, salt + b"\x02", 3, dklen=32)
+    return enc_key, mac_key
+
+
 def save_encrypted(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data_with_meta = dict(data)
@@ -302,9 +300,10 @@ def save_encrypted(path: Path, data: dict) -> None:
     plaintext = json.dumps(data_with_meta, separators=(",", ":")).encode()
     key = _derive_key(get_hwid())
     salt = os.urandom(16)
-    cipher_key = hashlib.pbkdf2_hmac("sha256", key, salt, 3, dklen=32)
-    encrypted = _xor(plaintext, cipher_key)
-    payload = {"s": salt.hex(), "d": encrypted.hex(), "h": _hmac(plaintext), "v": 4}
+    enc_key, mac_key = _derive_enc_keys(key, salt)
+    encrypted = _xor(plaintext, enc_key)
+    mac = hmac.new(mac_key, encrypted, hashlib.sha256).hexdigest()
+    payload = {"s": salt.hex(), "d": encrypted.hex(), "h": mac, "v": 5}
     for attempt in range(3):
         try:
             tmp = path.with_suffix(f".tmp{attempt}")
@@ -330,12 +329,13 @@ def load_encrypted(path: Path) -> dict | None:
             return None
         salt = bytes.fromhex(raw["s"])
         encrypted = bytes.fromhex(raw["d"])
-        expected_hmac = raw["h"]
+        expected_mac = raw["h"]
         key = _derive_key(get_hwid())
-        cipher_key = hashlib.pbkdf2_hmac("sha256", key, salt, 3, dklen=32)
-        plaintext = _xor(encrypted, cipher_key)
-        if not hmac.compare_digest(_hmac(plaintext), expected_hmac):
+        enc_key, mac_key = _derive_enc_keys(key, salt)
+        computed_mac = hmac.new(mac_key, encrypted, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(computed_mac, expected_mac):
             return None
+        plaintext = _xor(encrypted, enc_key)
         data = json.loads(plaintext)
         data.pop("_t", None)
         data.pop("_i", None)

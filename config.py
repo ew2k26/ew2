@@ -111,13 +111,13 @@ class AppSettings:
 @dataclass
 class RunConfig:
     proxies: list[str]
-    remove_bad_proxies: bool
+    remove_bad: bool
     usernames: list[str]
     concurrency: int
     timeout: int
     scraped: bool = False
     webhook_url: str | None = None
-    webhook_message: str | None = None
+    webhook_msg: str | None = None
 
 
 @dataclass
