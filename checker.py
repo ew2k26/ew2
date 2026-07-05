@@ -2,45 +2,46 @@
 """Klatom v3.0.0 - Discord username checker."""
 from __future__ import annotations
 
+import sys, os, logging, warnings, asyncio
 
-import ctypes
-def _setup_window():
-    try:
-        k = ctypes.windll.kernel32
-        u = ctypes.windll.user32
-        h = k.GetConsoleWindow()
-        if h:
-            u.SetWindowTextW(h, "Klatom v3.0.0 - Discord Username Checker")
-            hd = k.GetStdHandle(-11)
-            m = ctypes.c_ulong()
-            k.GetConsoleMode(hd, ctypes.byref(m))
-            k.SetConsoleMode(hd, m.value | 0x0004)
-    except: pass
-_setup_window()
-
-import asyncio.sslproto as _sslproto
-_orig_eof = _sslproto.SSLProtocol.eof_received
-def _safe_eof(self):
-    try:
-        return _orig_eof(self)
-    except RuntimeError:
-        return False
-_sslproto.SSLProtocol.eof_received = _safe_eof
-
-import asyncio.proactor_events as _proactor
-_orig_cl = _proactor._ProactorBasePipeTransport._call_connection_lost
-def _silent_cl(self, exc):
-    try:
-        _orig_cl(self, exc)
-    except ConnectionResetError:
-        pass
-_proactor._ProactorBasePipeTransport._call_connection_lost = _silent_cl
-
-import logging, warnings
 for _n in ("aiohttp", "aiohttp.client", "aiohttp.access", "aiohttp.internal"):
     logging.getLogger(_n).setLevel(logging.CRITICAL)
 warnings.filterwarnings("ignore", message=".*[Uu]nclosed.*")
 warnings.filterwarnings("ignore", message=".*[Cc]onnection.*")
+
+try:
+    import asyncio.sslproto as _sslproto
+    _orig_eof = _sslproto.SSLProtocol.eof_received
+    def _safe_eof(self):
+        try:
+            return _orig_eof(self)
+        except RuntimeError:
+            return False
+    _sslproto.SSLProtocol.eof_received = _safe_eof
+except Exception:
+    pass
+
+try:
+    import asyncio.proactor_events as _proactor
+    _orig_cl = _proactor._ProactorBasePipeTransport._call_connection_lost
+    def _silent_cl(self, exc):
+        try:
+            _orig_cl(self, exc)
+        except ConnectionResetError:
+            pass
+    _proactor._ProactorBasePipeTransport._call_connection_lost = _silent_cl
+except Exception:
+    pass
+
+import ctypes
+try:
+    k = ctypes.windll.kernel32
+    u = ctypes.windll.user32
+    h = k.GetConsoleWindow()
+    if h:
+        u.SetWindowTextW(h, "Klatom v3.0.0 - Discord Username Checker")
+except Exception:
+    pass
 
 import argparse, asyncio, random, sys, time
 from pathlib import Path
@@ -225,4 +226,15 @@ async def _run_checker(cfg: RunConfig, settings: AppSettings) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        try:
+            from ui import console
+            console.print(f"\n[bold red]Fatal error:[/] {e}")
+            traceback.print_exc()
+        except Exception:
+            print(f"Fatal error: {e}")
+            traceback.print_exc()
+        input("\nPress Enter to exit...")
