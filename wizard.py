@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""KLATOM v3.2 - Setup wizard and proxy scraper."""
+"""KLATOM v3.3 - Setup wizard and proxy scraper."""
 
 from __future__ import annotations
 

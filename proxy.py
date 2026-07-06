@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""KLATOM v3.2 - Proxy manager with rotation, cooldowns, scoring, and speed testing."""
+"""KLATOM v3.3 - Proxy manager with rotation, cooldowns, scoring, and speed testing."""
 
 from __future__ import annotations
 
@@ -232,6 +232,7 @@ class ProxyManager:
         tested = [0]
         working_count = [0]
         lock = asyncio.Lock()
+        total = len(self._proxies)
 
         async def _test_one(proxy_raw: str | None) -> None:
             proxy = self._format(proxy_raw) if proxy_raw else None
@@ -240,49 +241,48 @@ class ProxyManager:
                     tested[0] += 1
                     results.append((proxy or "", 99999.0, False))
                 if on_progress and tested[0] % 50 == 0:
-                    on_progress(tested[0], len(self._proxies), working_count[0])
-            return
+                    on_progress(tested[0], total, working_count[0])
+                return
 
-        start = time.time()
-        is_ok = False
-        try:
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=timeout),
-                trust_env=False,
-            ) as sess:
-                async with sess.post(
-                    ENDPOINT,
-                    json={"username": "a"},
-                    proxy=proxy,
-                    headers={"Content-Type": "application/json"},
-                ) as resp:
-                    is_ok = resp.status in (200, 201, 204)
-        except Exception:
-            pass
+            start = time.time()
+            is_ok = False
+            try:
+                async with sem:
+                    async with aiohttp.ClientSession(
+                        timeout=aiohttp.ClientTimeout(total=timeout),
+                        trust_env=False,
+                    ) as sess:
+                        async with sess.post(
+                            ENDPOINT,
+                            json={"username": "a"},
+                            proxy=proxy,
+                            headers={"Content-Type": "application/json"},
+                        ) as resp:
+                            is_ok = resp.status in (200, 201, 204)
+            except Exception:
+                pass
 
-        latency_ms = (time.time() - start) * 1000
-        async with lock:
-            tested[0] += 1
-            if is_ok:
-                working_count[0] += 1
-            results.append((proxy or "", latency_ms, is_ok))
-            if on_progress and tested[0] % 50 == 0:
-                on_progress(tested[0], len(self._proxies), working_count[0])
+            latency_ms = (time.time() - start) * 1000
+            async with lock:
+                tested[0] += 1
+                if is_ok:
+                    working_count[0] += 1
+                results.append((proxy or "", latency_ms, is_ok))
+                if on_progress and tested[0] % 50 == 0:
+                    on_progress(tested[0], total, working_count[0])
 
         tasks = [_test_one(p) for p in self._proxies]
         await asyncio.gather(*tasks)
 
-        # sort: working first by latency, then dead
         results.sort(key=lambda x: (not x[2], x[1]))
 
-        # update internal latency data for working proxies
         for proxy, latency_ms, is_ok in results:
             if is_ok and latency_ms < 99999:
                 self._latencies[proxy] = latency_ms / 1000.0
                 self._latency_count[proxy] = 1
 
         if on_progress:
-            on_progress(len(self._proxies), len(self._proxies), working_count[0])
+            on_progress(total, total, working_count[0])
 
         return results
 

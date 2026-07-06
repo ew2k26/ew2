@@ -19,7 +19,7 @@ DATA_DIR = APPDATA_DIR / "data"
 LOGS_DIR = APPDATA_DIR / "logs"
 RESULTS_DIR = APPDATA_DIR / "results"
 
-VERSION = "3.2.0"
+VERSION = "3.3.0"
 ENDPOINT = "https://discord.com/api/v9/unique-username/username-attempt-unauthed"
 USERNAME_CHARS = string.ascii_lowercase + string.digits + "_" + "."
 MAX_CONCURRENCY = 2000
@@ -108,6 +108,7 @@ class AppSettings:
     verbose: bool = False
     no_wizard: bool = False
     mod: bool = False
+    terminal: bool = False
 
 
 @dataclass

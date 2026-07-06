@@ -40,7 +40,7 @@ class C:
     WARNING = "#FF9F0A"
     MUTED = "#7A7A82"
 
-VERSION = "3.2.0"
+VERSION = "3.3.0"
 
 
 console = Console()
@@ -295,6 +295,15 @@ def _check_updates():
 
 
 def main():
+    try:
+        from mod_gui import main as gui_main
+        gui_main()
+    except Exception:
+        # Fallback to terminal
+        _terminal_main()
+
+
+def _terminal_main():
     console.clear()
     console.print(_banner())
     _show_session()

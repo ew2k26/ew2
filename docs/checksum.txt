@@ -1,2 +1,2 @@
-SHA256 checksum for Klatom.exe v3.2.0
-a6abb92b56794b6c860661b34298f924bf3bf213fefc6667e4cf5b63fdfd1681
+SHA256 checksum for Klatom.exe v3.3.0
+99e89536ed94a04e19b547827ecb93fa3c68dccc872ccb512654292cb88b4a47

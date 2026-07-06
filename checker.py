@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-"""KLATOM v3.2 - Discord username availability checker."""
+"""KLATOM v3.3 - Discord username availability checker."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ try:
     u = ctypes.windll.user32
     h = k.GetConsoleWindow()
     if h:
-        u.SetWindowTextW(h, "KLATOM v3.2 - Discord Username Checker")
+        u.SetWindowTextW(h, "KLATOM v" + str(__import__('config').VERSION))
 except Exception:
     pass
 
@@ -88,9 +88,10 @@ def parse_args() -> AppSettings:
     parser.add_argument("-d", "--debug", action="store_true")
     parser.add_argument("-n", "--no-wizard", action="store_true")
     parser.add_argument("-m", "--mod", action="store_true", help="Launch mod panel")
+    parser.add_argument("-t", "--terminal", action="store_true", help="Use terminal UI instead of GUI")
     parser.add_argument("--version", action="version", version=f"KLATOM v{__import__('config').VERSION}")
     args = parser.parse_args()
-    return AppSettings(debug=args.debug, no_wizard=args.no_wizard, mod=args.mod)
+    return AppSettings(debug=args.debug, no_wizard=args.no_wizard, mod=args.mod, terminal=args.terminal)
 
 
 async def _rps_calculator(stats: Stats, stop_event: asyncio.Event) -> None:
@@ -326,6 +327,20 @@ def main() -> None:
         from test_mode import main as mod_main
         mod_main()
         return
+
+    # Launch GUI by default (unless --terminal or --no-wizard)
+    if not settings.terminal and not settings.no_wizard:
+        try:
+            import tkinter as _tk
+            _tk.WmWithdraw(_tk._default_root or _tk.Tk())
+        except Exception:
+            pass
+        try:
+            from gui import main as gui_main
+            gui_main()
+            return
+        except Exception as e:
+            console.print(f"[{C.WARNING}]GUI failed ({e}), falling back to terminal[/]")
 
     try:
         # Authentication check

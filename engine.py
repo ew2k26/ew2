@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""KLATOM v3.2 - Checker engine, circuit breaker, error aggregation, webhook."""
+"""KLATOM v3.3 - Checker engine, circuit breaker, error aggregation, webhook."""
 
 from __future__ import annotations
 
