@@ -9,35 +9,23 @@ on:
         description: 'Release tag (e.g. v4.0.0)'
         required: true
 
-env:
-  PYTHON: python3.14
-
 jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - distro: ubuntu
             container: ubuntu:24.04
-            pkg_ext: deb
-            pkg_name: ew2_{ver}_amd64.deb
           - distro: debian
             container: debian:bookworm
-            pkg_ext: deb
-            pkg_name: ew2_{ver}_amd64.deb
           - distro: arch
             container: archlinux:latest
-            pkg_ext: pkg.tar.zst
-            pkg_name: ew2-{ver}-x86_64.pkg.tar.zst
           - distro: fedora
             container: fedora:40
-            pkg_ext: rpm
-            pkg_name: ew2-{ver}-1.x86_64.rpm
           - distro: alpine
             container: alpine:3.20
-            pkg_ext: apk
-            pkg_name: ew2-{ver}-r0.apk
 
     container: ${{ matrix.container }}
 
@@ -63,20 +51,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Show environment
+        run: |
+          echo "Working directory: $(pwd)"
+          echo "Python: $(which python3) ($(python3 --version 2>&1))"
+          echo "Files: $(ls *.spec 2>/dev/null || echo 'NO SPEC FILES')"
+
       - name: Install dependencies
         run: |
           pip3 install --break-system-packages pyinstaller aiohttp rich pydantic 2>/dev/null || \
           pip3 install pyinstaller aiohttp rich pydantic
 
       - name: Build ew2
-        run: |
-          python3 -m PyInstaller klatom.spec --clean --noconfirm
+        working-directory: ${{ github.workspace }}
+        run: python3 -m PyInstaller klatom.spec --clean --noconfirm
 
       - name: Build ew2-Mod
-        run: |
-          python3 -m PyInstaller ew2mod.spec --clean --noconfirm
+        working-directory: ${{ github.workspace }}
+        run: python3 -m PyInstaller ew2mod.spec --clean --noconfirm
 
       - name: Package for ${{ matrix.distro }}
+        working-directory: ${{ github.workspace }}
         run: |
           VER="${GITHUB_REF_NAME:-dev}"
           VER="${VER#v}"
@@ -90,10 +85,10 @@ jobs:
           chmod 755 "$BIN_DIR/ew2" "$BIN_DIR/ew2-Mod"
           cp ew2.ico "$ICON_DIR/ew2.png" 2>/dev/null || true
 
-          cat > "$DESKTOP_DIR/ew2.desktop" <<'DESK'
+          cat > "$DESKTOP_DIR/ew2.desktop" <<DESK
           [Desktop Entry]
           Name=ew2
-          Comment=ew² Discord Username Checker
+          Comment=ew2 Discord Username Checker
           Exec=ew2
           Icon=ew2
           Terminal=true
@@ -112,7 +107,7 @@ jobs:
               Architecture: amd64
               Depends: python3 (>= 3.10), python3-tk
               Maintainer: ew2 <noreply@ew2-26c.pages.dev>
-              Description: ew² Discord Username Checker
+              Description: ew2 Discord Username Checker
                High-performance name checker with 17+ proxy sources.
               EOF
               cp -r pkg-staging/* pkg-deb/
@@ -127,15 +122,15 @@ jobs:
               cat > pkg-arch/PKGINFO <<EOF
               pkgname = ew2
               pkgver = $VER
-              pkgdesc = ew² Discord Username Checker
+              pkgdesc = ew2 Discord Username Checker
               url = https://production.ew2-26c.pages.dev
               arch = x86_64
               license = custom
               depends = python
               depends = tk
               EOF
-              tar -cf "ew2-${VER}-x86_64.pkg.tar.zst" -I "zstd" pkg-arch/ 2>/dev/null || \
-              tar --zstd -cf "ew2-${VER}-x86_64.pkg.tar.zst" pkg-arch/
+              tar --zstd -cf "ew2-${VER}-x86_64.pkg.tar.zst" pkg-arch/ 2>/dev/null || \
+              tar -cf "ew2-${VER}-x86_64.pkg.tar.zst" pkg-arch/
               echo "ASSET=ew2-${VER}-x86_64.pkg.tar.zst" >> $GITHUB_ENV
               ;;
             fedora)
@@ -143,7 +138,7 @@ jobs:
               Name: ew2
               Version: $VER
               Release: 1
-              Summary: ew² Discord Username Checker
+              Summary: ew2 Discord Username Checker
               License: Custom
               Source0: ew2
               Requires: python3
@@ -176,6 +171,7 @@ jobs:
           esac
 
       - name: Generate checksums
+        working-directory: ${{ github.workspace }}
         run: |
           echo "## ${{ matrix.distro }}" >> checksums.txt
           sha256sum dist/ew2 dist/ew2-Mod >> checksums.txt 2>/dev/null || \
@@ -226,13 +222,22 @@ jobs:
       - name: Install Python deps
         run: pip install pyinstaller aiohttp rich pydantic
 
+      - name: Show environment
+        run: |
+          echo "Working directory: $(pwd)"
+          echo "Python: $(which python) ($(python --version 2>&1))"
+          echo "Files: $(ls *.spec 2>/dev/null || echo 'NO SPEC FILES')"
+
       - name: Build ew2
+        working-directory: ${{ github.workspace }}
         run: python -m PyInstaller klatom.spec --clean --noconfirm
 
       - name: Build ew2-Mod
+        working-directory: ${{ github.workspace }}
         run: python -m PyInstaller ew2mod.spec --clean --noconfirm
 
       - name: Package universal Linux
+        working-directory: ${{ github.workspace }}
         run: |
           VER="${GITHUB_REF_NAME:-dev}"
           VER="${VER#v}"
@@ -242,7 +247,7 @@ jobs:
           cp dist/ew2-Mod "ew2-${VER}-linux-x86_64/ew2-Mod"
           chmod 755 "ew2-${VER}-linux-x86_64/ew2" "ew2-${VER}-linux-x86_64/ew2-Mod"
           cat > "ew2-${VER}-linux-x86_64/README.txt" <<EOF
-          ew² v${VER} - Linux x86_64
+          ew2 v${VER} - Linux x86_64
 
           Requirements:
             - Python 3.10+
