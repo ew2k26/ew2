@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="ew² - Discord Username Checker. High-performance, secure, offline-capable.">
+    <meta name="description" content="ew² - Discord Username Checker. High-performance, secure, cross-platform.">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
     <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -12,98 +12,129 @@
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
-            --p:#A855F7;--pd:#7C3AED;--pl:#C084FC;
             --ok:#28C840;--err:#E03030;--warn:#E08800;
-            --m:#555560;--bg:#050508;--card:#0A0A0F;--card2:#101018;
-            --bdr:#1A1A24;--txt:#E8E8ED;--txt2:#707080
+            --m:#444450;--bg:#050507;--card:#0A0A0E;--card2:#0E0E14;
+            --bdr:#16161E;--txt:#C8C8D0;--txt2:#585868;
+            --accent:#2A2A32;--accent2:#202028
         }
-        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);line-height:1.6}
+        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);line-height:1.6;-webkit-font-smoothing:antialiased}
         .c{max-width:880px;margin:0 auto;padding:0 24px}
 
-        header{padding:56px 0 48px;text-align:center;background:linear-gradient(180deg,rgba(168,85,247,.06) 0%,transparent 100%)}
-        .logo{font-size:3.2rem;font-weight:900;letter-spacing:8px;color:var(--p)}
-        .tag{color:var(--txt2);font-size:.95rem;margin-top:10px;letter-spacing:1px}
+        header{padding:64px 0 52px;text-align:center;position:relative}
+        .logo{font-size:3.4rem;font-weight:900;letter-spacing:10px;color:#E0E0E8}
+        .tag{color:var(--txt2);font-size:.88rem;margin-top:12px;letter-spacing:2px;text-transform:uppercase}
 
-        nav{position:sticky;top:0;background:rgba(5,5,8,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--bdr);padding:14px 0;z-index:100}
+        nav{position:sticky;top:0;background:rgba(5,5,7,.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr);padding:14px 0;z-index:100}
         nav ul{display:flex;justify-content:center;gap:28px;list-style:none;flex-wrap:wrap}
-        nav a{color:var(--txt2);text-decoration:none;font-size:.88rem;letter-spacing:.5px;transition:color .2s}
-        nav a:hover{color:var(--p)}
+        nav a{color:var(--txt2);text-decoration:none;font-size:.85rem;letter-spacing:.5px;transition:color .2s}
+        nav a:hover{color:var(--txt)}
 
         section{padding:56px 0;border-top:1px solid var(--bdr)}
-        h2{font-size:1.4rem;margin-bottom:28px;font-weight:700;letter-spacing:.5px}
-        h2 em{font-style:normal;color:var(--p)}
+        h2{font-size:1.35rem;margin-bottom:28px;font-weight:700;letter-spacing:.5px;color:#E0E0E8}
+        h2 em{font-style:normal;color:#D0D0D8}
 
-        .hero{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:48px 40px;text-align:center}
-        .ver{color:var(--m);font-size:.88rem;margin-bottom:28px;letter-spacing:.5px}
+        .dl-tabs{display:flex;gap:6px;margin-bottom:24px;justify-content:center;flex-wrap:wrap}
+        .dl-tab{padding:10px 24px;border-radius:8px;border:1px solid var(--bdr);background:var(--card);color:var(--txt2);cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s;text-decoration:none}
+        .dl-tab:hover{color:var(--txt);border-color:#2A2A34}
+        .dl-tab.active{background:var(--accent);color:#E0E0E8;border-color:#2A2A34}
+        .dl-tab svg{width:16px;height:16px;fill:currentColor;vertical-align:middle;margin-right:6px}
+
+        .dl-panel{display:none}
+        .dl-panel.active{display:block}
+
+        .hero{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:48px 40px;text-align:center;position:relative;overflow:hidden}
+        .ver{color:var(--m);font-size:.85rem;margin-bottom:28px;letter-spacing:.5px}
         .ver strong{color:var(--txt)}
-        .dl-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;padding:18px 56px;border-radius:10px;text-decoration:none;font-weight:700;font-size:1.1rem;transition:all .25s;box-shadow:0 4px 24px rgba(168,85,247,.3)}
-        .dl-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(168,85,247,.45)}
+        .dl-btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#E0E0E8;padding:18px 56px;border-radius:10px;text-decoration:none;font-weight:700;font-size:1.1rem;transition:all .25s;border:1px solid var(--bdr)}
+        .dl-btn:hover{transform:translateY(-2px);background:var(--accent2);border-color:#2A2A34}
         .dl-btn svg{width:18px;height:18px;fill:currentColor}
-        .dl-note{color:var(--m);font-size:.82rem;margin-bottom:32px}
+        .dl-note{color:var(--m);font-size:.8rem;margin-bottom:32px}
+        .dl-secondary{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+        .dl-sec-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card2);color:var(--txt2);padding:10px 20px;border-radius:8px;text-decoration:none;font-size:.82rem;font-weight:600;transition:all .2s;border:1px solid var(--bdr)}
+        .dl-sec-btn:hover{color:var(--txt);border-color:#2A2A34}
+        .dl-sec-btn svg{width:14px;height:14px;fill:currentColor}
 
-        .ck{background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.15);border-radius:10px;padding:20px;text-align:left}
-        .ck-l{color:var(--txt2);font-size:.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-        .ck-h{font-family:'SF Mono',Consolas,monospace;font-size:.88rem;color:var(--p);word-break:break-all;line-height:1.6}
-        .ck-c{margin-top:14px;padding-top:14px;border-top:1px solid rgba(168,85,247,.12)}
-        .ck-c p{color:var(--txt2);font-size:.78rem;margin-bottom:6px}
-        .ck-c code{background:rgba(168,85,247,.1);padding:4px 10px;border-radius:5px;font-family:'SF Mono',Consolas,monospace;font-size:.78rem;color:var(--txt)}
+        .ck{background:rgba(255,255,255,.02);border:1px solid var(--bdr);border-radius:10px;padding:20px;text-align:left}
+        .ck-l{color:var(--txt2);font-size:.72rem;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px}
+        .ck-h{font-family:'SF Mono',Consolas,monospace;font-size:.85rem;color:var(--txt);word-break:break-all;line-height:1.6}
+        .ck-c{margin-top:14px;padding-top:14px;border-top:1px solid var(--bdr)}
+        .ck-c p{color:var(--txt2);font-size:.76rem;margin-bottom:6px}
+        .ck-c code{background:rgba(255,255,255,.04);padding:4px 10px;border-radius:5px;font-family:'SF Mono',Consolas,monospace;font-size:.76rem;color:var(--txt)}
 
-        .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-        .card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:22px;transition:border-color .2s}
-        .card:hover{border-color:rgba(168,85,247,.3)}
-        .card h3{font-size:.9rem;margin:10px 0 6px;font-weight:600}
-        .card p{color:var(--txt2);font-size:.82rem;line-height:1.5}
-        .card .icon{font-size:1.4rem}
+        .distro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:20px}
+        .distro-card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:20px;transition:all .25s}
+        .distro-card:hover{border-color:#222230;background:var(--card2)}
+        .distro-card h4{font-size:.88rem;font-weight:600;color:#D0D0D8;margin-bottom:4px}
+        .distro-card .pkg{color:var(--m);font-size:.72rem;font-family:'SF Mono',Consolas,monospace;margin-bottom:10px}
+        .distro-card a{color:var(--txt);text-decoration:none;font-size:.82rem;font-weight:600;transition:color .2s}
+        .distro-card a:hover{color:#E0E0E8}
+        .distro-card .inst{margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr)}
+        .distro-card .inst p{color:var(--txt2);font-size:.74rem;margin-bottom:4px}
+        .distro-card .inst code{background:rgba(255,255,255,.04);padding:2px 7px;border-radius:4px;font-family:'SF Mono',Consolas,monospace;font-size:.74rem;color:var(--txt);word-break:break-all}
+
+        .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        .card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:22px;transition:all .25s}
+        .card:hover{border-color:#222230;background:var(--card2)}
+        .card h3{font-size:.88rem;margin:10px 0 6px;font-weight:600;color:#D0D0D8}
+        .card p{color:var(--txt2);font-size:.8rem;line-height:1.5}
+        .card .icon{font-size:1.3rem}
 
         .steps{display:flex;flex-direction:column;gap:10px;counter-reset:step}
         .step{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:16px 18px 16px 56px;position:relative}
-        .step::before{counter-increment:step;content:counter(step);position:absolute;left:16px;top:16px;width:30px;height:30px;background:var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;color:#fff}
-        .step h3{font-size:.9rem;margin-bottom:3px;font-weight:600}
-        .step p{color:var(--txt2);font-size:.82rem}
-        .step code{background:rgba(168,85,247,.1);padding:2px 7px;border-radius:4px;font-family:'SF Mono',Consolas,monospace;font-size:.78rem}
+        .step::before{counter-increment:step;content:counter(step);position:absolute;left:16px;top:16px;width:30px;height:30px;background:var(--accent);border:1px solid var(--bdr);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;color:#C0C0C8}
+        .step h3{font-size:.88rem;margin-bottom:3px;font-weight:600;color:#D0D0D8}
+        .step p{color:var(--txt2);font-size:.8rem}
+        .step code{background:rgba(255,255,255,.04);padding:2px 7px;border-radius:4px;font-family:'SF Mono',Consolas,monospace;font-size:.76rem;color:var(--txt)}
+
+        .os-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+        .os-tab{padding:8px 18px;border-radius:6px;border:1px solid var(--bdr);background:var(--card);color:var(--txt2);cursor:pointer;font-size:.8rem;font-weight:600;transition:all .2s}
+        .os-tab:hover{color:var(--txt)}
+        .os-tab.active{background:var(--accent);color:#E0E0E8}
+        .os-panel{display:none}
+        .os-panel.active{display:block}
 
         .il{display:flex;flex-direction:column}
         .il-i{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--bdr)}
         .il-i:last-child{border-bottom:none}
         .il-c{color:var(--ok);font-size:1rem;flex-shrink:0;margin-top:1px}
-        .il-i strong{font-size:.88rem}
-        .il-i p{color:var(--txt2);font-size:.82rem;margin-top:2px}
+        .il-i strong{font-size:.86rem;color:#D0D0D8}
+        .il-i p{color:var(--txt2);font-size:.8rem;margin-top:2px}
 
         .fq{display:flex;flex-direction:column;gap:10px}
         .fq-i{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:18px}
-        .fq-i h3{color:var(--p);font-size:.9rem;margin-bottom:6px;font-weight:600}
-        .fq-i p{color:var(--txt2);font-size:.82rem}
+        .fq-i h3{color:#D0D0D8;font-size:.88rem;margin-bottom:6px;font-weight:600}
+        .fq-i p{color:var(--txt2);font-size:.8rem}
 
         .sb{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:32px;text-align:center}
-        .sb a{color:var(--p);text-decoration:none;font-weight:600}
+        .sb a{color:var(--txt);text-decoration:none;font-weight:600}
         .sb a:hover{text-decoration:underline}
-        .sb .si{color:var(--txt2);font-size:.82rem;margin-top:20px;text-align:left;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.8}
+        .sb .si{color:var(--txt2);font-size:.8rem;margin-top:20px;text-align:left;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.8}
 
-        .note{margin-top:28px;padding:18px;background:rgba(255,159,10,.04);border:1px solid rgba(255,159,10,.15);border-radius:10px;color:var(--txt2);font-size:.8rem;line-height:1.6}
+        .note{margin-top:28px;padding:18px;background:rgba(255,159,10,.03);border:1px solid rgba(255,159,10,.1);border-radius:10px;color:var(--txt2);font-size:.78rem;line-height:1.6}
         .note strong{color:var(--warn)}
 
-        footer{padding:28px 0;text-align:center;color:#555;font-size:.78rem;border-top:1px solid var(--bdr)}
+        footer{padding:28px 0;text-align:center;color:#333340;font-size:.76rem;border-top:1px solid var(--bdr)}
         footer a{color:var(--txt2);text-decoration:none}
-        footer a:hover{color:var(--p)}
+        footer a:hover{color:var(--txt)}
 
-        .ml{position:fixed;bottom:14px;right:14px;color:var(--bdr);text-decoration:none;font-size:.65rem;padding:4px 8px;border-radius:4px;transition:color .3s;z-index:50}
+        .ml{position:fixed;bottom:14px;right:14px;color:var(--bdr);text-decoration:none;font-size:.6rem;padding:4px 8px;border-radius:4px;transition:color .3s;z-index:50}
         .ml:hover{color:var(--m)}
 
-        .mo{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center}
+        .mo{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:200;align-items:center;justify-content:center}
         .mo.a{display:flex}
         .mb{background:var(--card2);border:1px solid var(--bdr);border-radius:14px;padding:36px;max-width:380px;width:90%;text-align:center}
-        .mb h3{margin-bottom:16px;font-size:1.1rem}
+        .mb h3{margin-bottom:16px;font-size:1.1rem;color:#D0D0D8}
         .mb input{width:100%;padding:12px 14px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:.92rem;margin-bottom:14px;outline:none}
-        .mb input:focus{border-color:var(--p)}
-        .mb button{width:100%;padding:12px;background:var(--p);color:#fff;border:none;border-radius:8px;font-size:.92rem;cursor:pointer;font-weight:600;transition:background .2s}
-        .mb button:hover{background:var(--pd)}
+        .mb input:focus{border-color:#3A3A44}
+        .mb button{width:100%;padding:12px;background:var(--accent);color:#E0E0E8;border:1px solid var(--bdr);border-radius:8px;font-size:.92rem;cursor:pointer;font-weight:600;transition:background .2s}
+        .mb button:hover{background:var(--accent2)}
         .me{color:var(--err);font-size:.8rem;margin-top:10px;display:none}
-        .mh{color:var(--m);font-size:.72rem;margin-top:14px}
+        .mh{color:var(--m);font-size:.7rem;margin-top:14px}
         .mc{display:none}
         .mc.a{display:block}
         .mp{background:var(--card);border:1px solid var(--warn);border-radius:12px;padding:28px;margin-top:24px}
         .mp h3{color:var(--warn);margin-bottom:12px;font-size:1rem}
-        .mp p{color:var(--txt2);font-size:.82rem}
+        .mp p{color:var(--txt2);font-size:.8rem}
         .mt{color:var(--err);font-size:.8rem;margin-top:12px}
 
         @media(max-width:700px){
@@ -112,6 +143,7 @@
             .hero{padding:32px 20px}
             .dl-btn{padding:16px 40px;font-size:1rem}
             .grid{grid-template-columns:1fr}
+            .distro-grid{grid-template-columns:1fr}
         }
     </style>
 </head>
@@ -139,19 +171,121 @@
     <main class="c">
         <section id="download">
             <h2>Download <em>ew²</em></h2>
-            <div class="hero">
-                <p class="ver">Latest: <strong>v3.3.0</strong> &middot; Windows 10+ (64-bit)</p>
-                <a href="https://github.com/ew2k26/klatom/releases/download/v4.0.0/ew2.exe" class="dl-btn" download>
-                    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                    Download ew²
-                </a>
-                <p class="dl-note">Single executable. No installation required.</p>
-                <div class="ck">
-                    <div class="ck-l">SHA-256 Checksum</div>
-                    <div class="ck-h" id="checksum-value">Loading...</div>
-                    <div class="ck-c">
-                        <p>Verify in PowerShell:</p>
-                        <code>certutil -hashfile ew2.exe SHA256</code>
+
+            <div class="dl-tabs">
+                <button class="dl-tab active" onclick="showOS('win')">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;margin-right:6px"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+                    Windows
+                </button>
+                <button class="dl-tab" onclick="showOS('linux')">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;margin-right:6px"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.199.025.399-.008.592-.066a.97.97 0 00.436-.266c.18-.17.303-.4.398-.665.135-.398.199-.863.2-1.297v-.059l.003-.057c.01-.471-.033-.941-.134-1.396-.018-.09-.04-.173-.058-.26-.086-.395-.236-.765-.465-1.085l-.003-.006a2.08 2.08 0 00-.199-.363 6.46 6.46 0 00.186-.94c.076-.605-.01-1.073-.16-1.434h-.003c-.05-.119-.112-.229-.183-.333-.383-.57-.966-.954-1.613-1.181-.649-.227-1.365-.302-2.039-.136a4.02 4.02 0 00-.292.084c-.149.048-.284.094-.439.135-.36.094-.797.134-1.297.06-.499-.075-1.048-.265-1.659-.466-.473-.15-.907-.296-1.279-.42-.371-.124-.664-.214-.896-.335-.488-.267-.766-.673-.766-1.193 0-.334.114-.667.36-.999.228-.333.536-.57.884-.75a5.86 5.86 0 00.196-.746c.055-.353.055-.677-.004-.974-.06-.267-.199-.502-.398-.666a1.74 1.74 0 00-.197-.18c.254-.42.35-.793.246-1.08-.11-.3-.388-.465-.74-.517a5.17 5.17 0 00-.889-.06c-.135 0-.272.007-.406.021a3.23 3.23 0 00-.183-.263c-.37-.47-.886-.81-1.468-1.036-.583-.224-1.213-.33-1.835-.268z"/></svg>
+                    Linux
+                </button>
+            </div>
+
+            <div class="dl-panel active" id="panel-win">
+                <div class="hero">
+                    <p class="ver">Latest: <strong>v4.0.0</strong> &middot; Windows 10+ (64-bit)</p>
+                    <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2.exe" class="dl-btn" download>
+                        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        Download ew²
+                    </a>
+                    <p class="dl-note">Single executable. No installation required.</p>
+                    <div class="dl-secondary">
+                        <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-Mod.exe" class="dl-sec-btn" download>
+                            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                            ew2-Mod.exe
+                        </a>
+                    </div>
+                    <div class="ck" style="margin-top:24px">
+                        <div class="ck-l">SHA-256 Checksum</div>
+                        <div class="ck-h" id="ck-win">Loading...</div>
+                        <div class="ck-c">
+                            <p>Verify in PowerShell:</p>
+                            <code>certutil -hashfile ew2.exe SHA256</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dl-panel" id="panel-linux">
+                <div class="hero">
+                    <p class="ver">Latest: <strong>v4.0.0</strong> &middot; Linux x86_64</p>
+                    <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-linux-x86_64.tar.gz" class="dl-btn" download>
+                        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        Download ew² (Universal)
+                    </a>
+                    <p class="dl-note">Pre-built binary for any Linux distro. Extract and run.</p>
+                    <div class="dl-secondary">
+                        <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-Mod.exe" class="dl-sec-btn" download>
+                            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                            ew2-Mod (Windows)
+                        </a>
+                    </div>
+                    <div class="ck" style="margin-top:24px">
+                        <div class="ck-l">SHA-256 Checksum (Universal Tarball)</div>
+                        <div class="ck-h" id="ck-linux">Loading...</div>
+                        <div class="ck-c">
+                            <p>Verify:</p>
+                            <code>sha256sum ew2-linux-x86_64.tar.gz</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="distro-grid" style="margin-top:20px">
+                    <div class="distro-card">
+                        <h4>Arch Linux</h4>
+                        <div class="pkg">ew2-4.0.0-1-x86_64.pkg.tar.zst</div>
+                        <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-4.0.0-x86_64.pkg.tar.zst" download>Download .pkg.tar.zst</a>
+                        <div class="inst">
+                            <p>Install:</p>
+                            <code>sudo pacman -U ew2-4.0.0-x86_64.pkg.tar.zst</code>
+                        </div>
+                    </div>
+                    <div class="distro-card">
+                        <h4>Debian</h4>
+                        <div class="pkg">ew2_4.0.0_amd64.deb</div>
+                        <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2_4.0.0_amd64.deb" download>Download .deb</a>
+                        <div class="inst">
+                            <p>Install:</p>
+                            <code>sudo dpkg -i ew2_4.0.0_amd64.deb</code>
+                        </div>
+                    </div>
+                    <div class="distro-card">
+                        <h4>Ubuntu</h4>
+                        <div class="pkg">ew2_4.0.0_amd64.deb</div>
+                        <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2_4.0.0_amd64.deb" download>Download .deb</a>
+                        <div class="inst">
+                            <p>Install:</p>
+                            <code>sudo dpkg -i ew2_4.0.0_amd64.deb</code>
+                        </div>
+                    </div>
+                    <div class="distro-card">
+                        <h4>Fedora</h4>
+                        <div class="pkg">ew2-4.0.0-1.x86_64.rpm</div>
+                        <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-4.0.0-1.x86_64.rpm" download>Download .rpm</a>
+                        <div class="inst">
+                            <p>Install:</p>
+                            <code>sudo rpm -i ew2-4.0.0-1.x86_64.rpm</code>
+                        </div>
+                    </div>
+                    <div class="distro-card">
+                        <h4>Alpine</h4>
+                        <div class="pkg">ew2-4.0.0-r0.apk</div>
+                        <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-4.0.0-r0.apk" download>Download .apk</a>
+                        <div class="inst">
+                            <p>Install:</p>
+                            <code>sudo apk add --allow-untrusted ew2-4.0.0-r0.apk</code>
+                        </div>
+                    </div>
+                    <div class="distro-card">
+                        <h4>Build from Source</h4>
+                        <div class="pkg">PKGBUILD / build scripts</div>
+                        <a href="https://github.com/ew2k26/ew2" target="_blank" rel="noopener">View on GitHub</a>
+                        <div class="inst">
+                            <p>Arch:</p>
+                            <code>makepkg -si</code>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -165,18 +299,37 @@
                 <div class="card"><div class="icon">&#128246;</div><h3>Webhook</h3><p>Discord webhook notifications with batch delivery.</p></div>
                 <div class="card"><div class="icon">&#128260;</div><h3>Proxy Support</h3><p>Rotating, static, or scraped proxies with validation.</p></div>
                 <div class="card"><div class="icon">&#128736;</div><h3>Easy Setup</h3><p>Modern GUI wizard. No config files needed.</p></div>
-                <div class="card"><div class="icon">&#128640;</div><h3>Speed Test</h3><p>Built-in proxy speed testing for optimal performance.</p></div>
+                <div class="card"><div class="icon">&#128640;</div><h3>Cross-Platform</h3><p>Windows, Arch, Debian, Ubuntu, Fedora, Alpine. Same features everywhere.</p></div>
             </div>
         </section>
 
         <section id="install">
             <h2>Installation</h2>
-            <div class="steps">
-                <div class="step"><h3>Download</h3><p>Click the download button above to save <code>ew2.exe</code></p></div>
-                <div class="step"><h3>Verify checksum</h3><p>Open PowerShell, navigate to the download folder, and run:<br><code>certutil -hashfile ew2.exe SHA256</code><br>Compare the output with the checksum shown above.</p></div>
-                <div class="step"><h3>Create a dedicated folder</h3><p>Move <code>ew2.exe</code> to its own folder. Do not move it after first run.</p></div>
-                <div class="step"><h3>Run</h3><p>Double-click or launch from terminal. The GUI wizard will guide you.</p></div>
-                <div class="step"><h3>Authenticate</h3><p>Enter your license token or select the 24h free trial at startup.</p></div>
+
+            <div class="os-tabs">
+                <button class="os-tab active" onclick="showInst('win-inst')">Windows</button>
+                <button class="os-tab" onclick="showInst('linux-inst')">Linux</button>
+            </div>
+
+            <div class="os-panel active" id="win-inst">
+                <div class="steps">
+                    <div class="step"><h3>Download</h3><p>Click the download button above to save <code>ew2.exe</code></p></div>
+                    <div class="step"><h3>Verify checksum</h3><p>Open PowerShell, navigate to the download folder, and run:<br><code>certutil -hashfile ew2.exe SHA256</code><br>Compare the output with the checksum shown above.</p></div>
+                    <div class="step"><h3>Create a dedicated folder</h3><p>Move <code>ew2.exe</code> to its own folder. Do not move it after first run.</p></div>
+                    <div class="step"><h3>Run</h3><p>Double-click or launch from terminal. The GUI wizard will guide you.</p></div>
+                    <div class="step"><h3>Authenticate</h3><p>Enter your license token or select the 24h free trial at startup.</p></div>
+                </div>
+            </div>
+
+            <div class="os-panel" id="linux-inst">
+                <div class="steps">
+                    <div class="step"><h3>Download</h3><p>Choose your distro above, or grab the universal tarball:<br><code>wget https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-linux-x86_64.tar.gz</code></p></div>
+                    <div class="step"><h3>Verify checksum</h3><p>Run:<br><code>sha256sum ew2-linux-x86_64.tar.gz</code><br>Compare with the checksum shown in the download section.</p></div>
+                    <div class="step"><h3>Extract</h3><p><code>tar -xzf ew2-linux-x86_64.tar.gz<br>cd ew2-4.0.0-linux-x86_64</code></p></div>
+                    <div class="step"><h3>Install dependencies</h3><p>Debian/Ubuntu: <code>sudo apt install python3-tk</code><br>Arch: <code>sudo pacman -S tk</code><br>Fedora: <code>sudo dnf install python3-tkinter</code><br>Alpine: <code>sudo apk add tk</code></p></div>
+                    <div class="step"><h3>Run</h3><p><code>chmod +x ew2<br>./ew2</code><br>Or run in terminal mode: <code>python3 ew2 --terminal</code></p></div>
+                    <div class="step"><h3>Authenticate</h3><p>Enter your license token or select the 24h free trial at startup.</p></div>
+                </div>
             </div>
         </section>
 
@@ -198,23 +351,24 @@
             <div class="fq">
                 <div class="fq-i"><h3>Is this safe to run?</h3><p>Yes. Single executable, no installer, no background services. Verify the SHA-256 checksum for assurance.</p></div>
                 <div class="fq-i"><h3>Does it need internet?</h3><p>Yes. Internet is required for proxy scraping and Discord API access.</p></div>
-                <div class="fq-i"><h3>Where is data stored?</h3><p><code>%LOCALAPPDATA%\ew2\</code> &mdash; configuration, cache, session data, and results.</p></div>
+                <div class="fq-i"><h3>Where is data stored?</h3><p><strong>Windows:</strong> <code>%LOCALAPPDATA%\ew2\</code><br><strong>Linux:</strong> <code>~/.local/share/ew2/</code><br><strong>macOS:</strong> <code>~/Library/Application Support/ew2/</code></p></div>
                 <div class="fq-i"><h3>How do I get a token?</h3><p>Use the 24h free trial at startup, or get one from the Discord community.</p></div>
                 <div class="fq-i"><h3>Multiple machines?</h3><p>Each token is HWID-locked. One token per machine.</p></div>
-                <div class="fq-i"><h3>Requirements?</h3><p>Windows 10+, 64-bit. Nothing else needed.</p></div>
+                <div class="fq-i"><h3>Requirements?</h3><p><strong>Windows:</strong> 10+, 64-bit. Nothing else needed.<br><strong>Linux:</strong> Python 3.10+, python3-tk. Or use the pre-built binary.</p></div>
+                <div class="fq-i"><h3>Which Linux build should I use?</h3><p>Use the universal tarball for any distro. For native packages, choose the one matching your distribution. The universal tarball bundles all dependencies.</p></div>
             </div>
         </section>
 
         <section id="support">
             <h2>Support</h2>
             <div class="sb">
-                <p style="margin-bottom:16px;font-size:1.05rem">Need help?</p>
+                <p style="margin-bottom:16px;font-size:1.05rem;color:#D0D0D8">Need help?</p>
                 <p><a href="https://discord.gg/7qHmtRbSWV" target="_blank" rel="noopener">Join the Discord community</a></p>
                 <div class="si">
                     When reporting issues, include:<br>
                     &bull; Your HWID (shown at startup)<br>
                     &bull; ew² version<br>
-                    &bull; Windows version<br>
+                    &bull; OS and version (Windows/Linux)<br>
                     &bull; Steps to reproduce
                 </div>
             </div>
@@ -225,7 +379,7 @@
                 <h2 style="color:var(--warn)">&#9888; Moderation</h2>
                 <div class="mp">
                     <p>This area requires a temporary secret provided by an administrator.</p>
-                    <p style="margin-top:12px">Mod Build: <a href="https://github.com/ew2k26/klatom/releases/download/v4.0.0/ew2-Mod.exe" style="color:var(--p)">ew2-Mod.exe</a></p>
+                    <p style="margin-top:12px">Mod Build: <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-Mod.exe" style="color:var(--txt)">ew2-Mod.exe</a></p>
                     <p style="margin-top:8px">Features: Token management, generation, revocation, session info, proxy testing.</p>
                     <div class="mt" id="mod-timer"></div>
                 </div>
@@ -236,7 +390,7 @@
     <footer>
         <div class="c">
             <p>ew² &copy; 2026 &middot; <a href="#security">Security</a> &middot; <a href="#faq">FAQ</a> &middot; <a href="#support">Support</a></p>
-            <p style="margin-top:8px;font-size:.72rem;color:#444">This software is provided as-is. Use at your own responsibility.</p>
+            <p style="margin-top:8px;font-size:.72rem;color:#2A2A34">This software is provided as-is. Use at your own responsibility.</p>
         </div>
     </footer>
 
@@ -254,6 +408,18 @@
     </div>
 
     <script>
+    function showOS(os){
+        document.querySelectorAll('.dl-tab').forEach(function(t){t.classList.remove('active')});
+        document.querySelectorAll('.dl-panel').forEach(function(p){p.classList.remove('active')});
+        event.currentTarget.classList.add('active');
+        document.getElementById('panel-'+os).classList.add('active');
+    }
+    function showInst(id){
+        document.querySelectorAll('.os-tab').forEach(function(t){t.classList.remove('active')});
+        document.querySelectorAll('.os-panel').forEach(function(p){p.classList.remove('active')});
+        event.currentTarget.classList.add('active');
+        document.getElementById(id).classList.add('active');
+    }
     (function(){
         var SK='kl_mod_active',EK='kl_mod_exp',TO=30*60*1000;
         function active(){var e=sessionStorage.getItem(EK);if(!e)return false;if(Date.now()>parseInt(e)){sessionStorage.removeItem(SK);sessionStorage.removeItem(EK);return false}return sessionStorage.getItem(SK)==='1'}
@@ -265,7 +431,21 @@
         document.addEventListener('keydown',function(e){if(e.key==='Escape')document.getElementById('mod-overlay').classList.remove('a')});
         if(active()){document.getElementById('mod-content').classList.add('a');tick()}
     })();
-    fetch('checksum.txt').then(function(r){return r.text()}).then(function(t){var l=t.split('\n');for(var i=0;i<l.length;i++){if(l[i].trim().length===64){document.getElementById('checksum-value').textContent=l[i].trim();return}}document.getElementById('checksum-value').textContent='N/A'}).catch(function(){document.getElementById('checksum-value').textContent='N/A'});
+    fetch('checksum.txt').then(function(r){return r.text()}).then(function(t){
+        var lines=t.trim().split('\n');
+        for(var i=0;i<lines.length;i++){
+            var l=lines[i].trim();
+            if(l.length===64){
+                if(!document.getElementById('ck-win').dataset.set){document.getElementById('ck-win').textContent=l;document.getElementById('ck-win').dataset.set='1'}
+            }else if(l.indexOf(' ')===64){
+                var parts=l.split(' ');
+                if(parts[1]&&parts[1].indexOf('ew2-linux')!==-1){
+                    document.getElementById('ck-linux').textContent=parts[0];
+                }
+            }
+        }
+        if(!document.getElementById('ck-win').dataset.set){document.getElementById('ck-win').textContent='N/A'}
+    }).catch(function(){document.getElementById('ck-win').textContent='N/A';document.getElementById('ck-linux').textContent='N/A'});
     document.querySelectorAll('nav a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){var h=this.getAttribute('href');if(h==='#')return;e.preventDefault();var t=document.querySelector(h);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
     </script>
 </body>

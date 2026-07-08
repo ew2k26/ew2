@@ -1,0 +1,265 @@
+name: Build Linux
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v4.0.0)'
+        required: true
+
+env:
+  PYTHON: python3.14
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - distro: ubuntu
+            container: ubuntu:24.04
+            pkg_ext: deb
+            pkg_name: ew2_{ver}_amd64.deb
+          - distro: debian
+            container: debian:bookworm
+            pkg_ext: deb
+            pkg_name: ew2_{ver}_amd64.deb
+          - distro: arch
+            container: archlinux:latest
+            pkg_ext: pkg.tar.zst
+            pkg_name: ew2-{ver}-x86_64.pkg.tar.zst
+          - distro: fedora
+            container: fedora:40
+            pkg_ext: rpm
+            pkg_name: ew2-{ver}-1.x86_64.rpm
+          - distro: alpine
+            container: alpine:3.20
+            pkg_ext: apk
+            pkg_name: ew2-{ver}-r0.apk
+
+    container: ${{ matrix.container }}
+
+    steps:
+      - name: Prepare container
+        run: |
+          case "${{ matrix.distro }}" in
+            ubuntu|debian)
+              apt-get update -qq
+              apt-get install -y -qq python3 python3-pip python3-venv python3-tk git curl ca-certificates binutils
+              ;;
+            arch)
+              pacman -Sy --noconfirm python python-pip tk git curl base-devel
+              ;;
+            fedora)
+              dnf install -y python3 python3-pip python3-tkinter git curl binutils
+              ;;
+            alpine)
+              apk add --no-cache python3 py3-pip tk git curl binutils
+              ;;
+          esac
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pip3 install --break-system-packages pyinstaller aiohttp rich pydantic 2>/dev/null || \
+          pip3 install pyinstaller aiohttp rich pydantic
+
+      - name: Build ew2
+        run: |
+          python3 -m PyInstaller klatom.spec --clean --noconfirm
+
+      - name: Build ew2-Mod
+        run: |
+          python3 -m PyInstaller ew2mod.spec --clean --noconfirm
+
+      - name: Package for ${{ matrix.distro }}
+        run: |
+          VER="${GITHUB_REF_NAME:-dev}"
+          VER="${VER#v}"
+          BIN_DIR="pkg-staging/usr/bin"
+          ICON_DIR="pkg-staging/usr/share/icons/hicolor/256x256/apps"
+          DESKTOP_DIR="pkg-staging/usr/share/applications"
+
+          mkdir -p "$BIN_DIR" "$ICON_DIR" "$DESKTOP_DIR"
+          cp dist/ew2 "$BIN_DIR/ew2"
+          cp dist/ew2-Mod "$BIN_DIR/ew2-Mod"
+          chmod 755 "$BIN_DIR/ew2" "$BIN_DIR/ew2-Mod"
+          cp ew2.ico "$ICON_DIR/ew2.png" 2>/dev/null || true
+
+          cat > "$DESKTOP_DIR/ew2.desktop" <<'DESK'
+          [Desktop Entry]
+          Name=ew2
+          Comment=ew² Discord Username Checker
+          Exec=ew2
+          Icon=ew2
+          Terminal=true
+          Type=Application
+          Categories=Utility;
+          DESK
+
+          case "${{ matrix.distro }}" in
+            ubuntu|debian)
+              mkdir -p pkg-deb/DEBIAN
+              cat > pkg-deb/DEBIAN/control <<EOF
+              Package: ew2
+              Version: $VER
+              Section: utils
+              Priority: optional
+              Architecture: amd64
+              Depends: python3 (>= 3.10), python3-tk
+              Maintainer: ew2 <noreply@ew2-26c.pages.dev>
+              Description: ew² Discord Username Checker
+               High-performance name checker with 17+ proxy sources.
+              EOF
+              cp -r pkg-staging/* pkg-deb/
+              dpkg-deb --build pkg-deb "ew2_${VER}_amd64.deb"
+              echo "ASSET=ew2_${VER}_amd64.deb" >> $GITHUB_ENV
+              ;;
+            arch)
+              mkdir -p pkg-arch/usr/bin pkg-arch/usr/share/applications
+              cp dist/ew2 pkg-arch/usr/bin/ew2
+              cp dist/ew2-Mod pkg-arch/usr/bin/ew2-Mod
+              chmod 755 pkg-arch/usr/bin/ew2 pkg-arch/usr/bin/ew2-Mod
+              cat > pkg-arch/PKGINFO <<EOF
+              pkgname = ew2
+              pkgver = $VER
+              pkgdesc = ew² Discord Username Checker
+              url = https://production.ew2-26c.pages.dev
+              arch = x86_64
+              license = custom
+              depends = python
+              depends = tk
+              EOF
+              tar -cf "ew2-${VER}-x86_64.pkg.tar.zst" -I "zstd" pkg-arch/ 2>/dev/null || \
+              tar --zstd -cf "ew2-${VER}-x86_64.pkg.tar.zst" pkg-arch/
+              echo "ASSET=ew2-${VER}-x86_64.pkg.tar.zst" >> $GITHUB_ENV
+              ;;
+            fedora)
+              cat > ew2.spec <<EOF
+              Name: ew2
+              Version: $VER
+              Release: 1
+              Summary: ew² Discord Username Checker
+              License: Custom
+              Source0: ew2
+              Requires: python3
+              Requires: python3-tkinter
+              %description
+              High-performance name checker with 17+ proxy sources.
+              %install
+              mkdir -p %{buildroot}/usr/bin
+              cp ew2 %{buildroot}/usr/bin/ew2
+              cp ew2-Mod %{buildroot}/usr/bin/ew2-Mod
+              chmod 755 %{buildroot}/usr/bin/ew2 %{buildroot}/usr/bin/ew2-Mod
+              %files
+              /usr/bin/ew2
+              /usr/bin/ew2-Mod
+              EOF
+              rpmbuild -bb ew2.spec --define "_topdir $(pwd)/rpm" --define "_sourcedir $(pwd)" 2>/dev/null || \
+              rpmbuild -bb ew2.spec --define "_topdir $(pwd)/rpm" 2>/dev/null || \
+              echo "RPM build skipped (mock not available)"
+              echo "ASSET=ew2-${VER}-1.x86_64.rpm" >> $GITHUB_ENV
+              ;;
+            alpine)
+              mkdir -p pkg-apk/usr/bin
+              cp dist/ew2 pkg-apk/usr/bin/ew2
+              cp dist/ew2-Mod pkg-apk/usr/bin/ew2-Mod
+              chmod 755 pkg-apk/usr/bin/ew2 pkg-apk/usr/bin/ew2-Mod
+              tar -zcf "ew2-${VER}-r0.apk" pkg-apk/ 2>/dev/null || \
+              tar -czf "ew2-${VER}-r0.apk" pkg-apk/
+              echo "ASSET=ew2-${VER}-r0.apk" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Generate checksums
+        run: |
+          echo "## ${{ matrix.distro }}" >> checksums.txt
+          sha256sum dist/ew2 dist/ew2-Mod >> checksums.txt 2>/dev/null || \
+          shasum -a 256 dist/ew2 dist/ew2-Mod >> checksums.txt 2>/dev/null
+          if [ -n "${{ env.ASSET }}" ] && [ -f "${{ env.ASSET }}" ]; then
+            sha256sum "${{ env.ASSET }}" >> checksums.txt 2>/dev/null || \
+            shasum -a 256 "${{ env.ASSET }}" >> checksums.txt 2>/dev/null
+          fi
+
+      - name: Upload binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/ew2
+            dist/ew2-Mod
+          append_body: true
+          tag_name: ${{ github.ref_name || inputs.tag }}
+
+      - name: Upload package
+        uses: softprops/action-gh-release@v2
+        if: env.ASSET != ''
+        with:
+          files: ${{ env.ASSET }}
+          append_body: true
+          tag_name: ${{ github.ref_name || inputs.tag }}
+
+      - name: Upload checksums
+        uses: softprops/action-gh-release@v2
+        with:
+          files: checksums.txt
+          append_body: true
+          tag_name: ${{ github.ref_name || inputs.tag }}
+
+  build-universal:
+    runs-on: ubuntu-latest
+    container: python:3.14-slim
+
+    steps:
+      - name: Install system deps
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq python3-tk git curl binutils upx-ucl 2>/dev/null || \
+          apt-get install -y -qq python3-tk git curl binutils
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python deps
+        run: pip install pyinstaller aiohttp rich pydantic
+
+      - name: Build ew2
+        run: python -m PyInstaller klatom.spec --clean --noconfirm
+
+      - name: Build ew2-Mod
+        run: python -m PyInstaller ew2mod.spec --clean --noconfirm
+
+      - name: Package universal Linux
+        run: |
+          VER="${GITHUB_REF_NAME:-dev}"
+          VER="${VER#v}"
+          TARBALL="ew2-${VER}-linux-x86_64.tar.gz"
+          mkdir -p "ew2-${VER}-linux-x86_64"
+          cp dist/ew2 "ew2-${VER}-linux-x86_64/ew2"
+          cp dist/ew2-Mod "ew2-${VER}-linux-x86_64/ew2-Mod"
+          chmod 755 "ew2-${VER}-linux-x86_64/ew2" "ew2-${VER}-linux-x86_64/ew2-Mod"
+          cat > "ew2-${VER}-linux-x86_64/README.txt" <<EOF
+          ew² v${VER} - Linux x86_64
+
+          Requirements:
+            - Python 3.10+
+            - python3-tk (Debian/Ubuntu: sudo apt install python3-tk)
+            - Or just run the binary directly (all deps bundled)
+
+          Quick start:
+            chmod +x ew2
+            ./ew2
+
+          Discord: https://discord.gg/7qHmtRbSWV
+          EOF
+          tar -czf "$TARBALL" "ew2-${VER}-linux-x86_64/"
+
+      - name: Upload universal tarball
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ew2-*-linux-x86_64.tar.gz
+          append_body: true
+          tag_name: ${{ github.ref_name || inputs.tag }}

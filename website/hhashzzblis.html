@@ -7,16 +7,20 @@
     <title>ew² - Internal</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0C0C12;color:#F0F0F5;line-height:1.6;min-height:100vh;display:flex;align-items:center;justify-content:center}
+        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#050507;color:#C8C8D0;line-height:1.6;min-height:100vh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
         .c{max-width:500px;padding:40px;text-align:center}
-        h1{font-size:1.8rem;color:#A855F7;margin-bottom:20px;letter-spacing:4px}
-        .info{color:#7A7A82;font-size:.85rem;margin-bottom:30px;line-height:1.8}
-        .dl-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#A855F7,#7C3AED);color:#fff;padding:16px 40px;border-radius:10px;text-decoration:none;font-weight:700;font-size:1rem;transition:all .25s;box-shadow:0 4px 24px rgba(168,85,247,.3)}
-        .dl-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(168,85,247,.45)}
+        h1{font-size:1.8rem;color:#E0E0E8;margin-bottom:20px;letter-spacing:6px}
+        .info{color:#585868;font-size:.82rem;margin-bottom:30px;line-height:1.8}
+        .dl-btn{display:inline-flex;align-items:center;gap:10px;background:#1A1A22;color:#E0E0E8;padding:16px 40px;border-radius:10px;text-decoration:none;font-weight:700;font-size:1rem;transition:all .25s;border:1px solid #1E1E28}
+        .dl-btn:hover{transform:translateY(-2px);background:#141418}
         .dl-btn svg{width:18px;height:18px;fill:currentColor}
-        .warn{margin-top:30px;padding:16px;background:rgba(255,159,10,.04);border:1px solid rgba(255,159,10,.15);border-radius:10px;color:#7A7A82;font-size:.78rem;text-align:left;line-height:1.6}
-        .warn strong{color:#FF9F0A}
-        .hash{margin-top:20px;font-family:'SF Mono',Consolas,monospace;font-size:.72rem;color:#7C3AED;word-break:break-all}
+        .dl-sec{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+        .dl-s{display:inline-flex;align-items:center;gap:6px;background:#0E0E14;color:#585868;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:.82rem;font-weight:600;transition:all .2s;border:1px solid #16161E}
+        .dl-s:hover{color:#C8C8D0;border-color:#222230}
+        .dl-s svg{width:14px;height:14px;fill:currentColor}
+        .warn{margin-top:30px;padding:16px;background:rgba(255,159,10,.03);border:1px solid rgba(255,159,10,.1);border-radius:10px;color:#585868;font-size:.76rem;text-align:left;line-height:1.6}
+        .warn strong{color:#E08800}
+        .hash{margin-top:20px;font-family:'SF Mono',Consolas,monospace;font-size:.7rem;color:#444450;word-break:break-all}
     </style>
 </head>
 <body>
@@ -26,14 +30,20 @@
             <p>Mod Build - Internal Access</p>
             <p>Features: Token management, generation, revocation, session info, proxy testing.</p>
         </div>
-        <a href="https://github.com/ew2k26/klatom/releases/download/v4.0.0/ew2-Mod.exe" class="dl-btn" download>
+        <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-Mod.exe" class="dl-btn" download>
             <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-            Download Mod Build
+            Download Mod Build (Windows)
         </a>
+        <div class="dl-sec">
+            <a href="https://github.com/ew2k26/ew2/releases/download/v4.0.0/ew2-linux-x86_64.tar.gz" class="dl-s" download>
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Linux Universal
+            </a>
+        </div>
         <div class="warn">
             <strong>Notice:</strong> This build includes additional administrative tools. Use responsibly. Access is logged.
         </div>
-        <div class="hash">3f9edfe543ec0b624cc88696b584b331dd31b4432b9d549c3390d054663e7e7b</div>
+        <div class="hash">888F7890846C819660C0D4E8F621D56D2F3F863BDBC943879E17BC4EEC875E48</div>
     </div>
 </body>
 </html>

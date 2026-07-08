@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# ew2 - Arch Linux PKGBUILD
+# Usage: makepkg -si
+
+pkgname=ew2
+pkgver=4.0.0
+pkgrel=1
+pkgdesc='ew² - Name checker with proxy support'
+arch=('x86_64' 'i686' 'aarch64')
+url='https://production.ew2-26c.pages.dev'
+license=('custom')
+depends=('python' 'python-aiohttp' 'tk')
+makedepends=('python-pyinstaller')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/ew2k26/ew2/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/ew2-$pkgver"
+    python -m PyInstaller klatom.spec --clean --noconfirm
+    python -m PyInstaller ew2mod.spec --clean --noconfirm
+}
+
+package() {
+    cd "$srcdir/ew2-$pkgver"
+    install -Dm755 dist/ew2 "$pkgdir/usr/bin/ew2"
+    install -Dm755 dist/ew2-Mod "$pkgdir/usr/bin/ew2-mod"
+    install -Dm644 ew2.ico "$pkgdir/usr/share/icons/hicolor/256x256/apps/ew2.png"
+    install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/ew2.desktop" <<EOF
+[Desktop Entry]
+Name=ew2
+Comment=Name checker with proxy support
+Exec=ew2
+Icon=ew2
+Terminal=true
+Type=Application
+Categories=Utility;
+EOF
+}
